@@ -9,8 +9,12 @@ import torchvision.transforms.functional as F
 class ImagesDataset(Dataset):
 
 	def __init__(self, source_root, target_root, opts, target_transform=None, source_transform=None):
-		self.source_paths = sorted(data_utils.make_dataset(source_root))
-		self.target_paths = sorted(data_utils.make_dataset(target_root))
+		if 'grid' in source_root or 'GRID' in source_root:
+			self.source_paths = sorted(data_utils.make_grid_dataset(source_root))
+			self.target_paths = sorted(data_utils.make_grid_dataset(target_root))
+		else:
+			self.source_paths = sorted(data_utils.make_dataset(source_root))
+			self.target_paths = sorted(data_utils.make_dataset(target_root))
 		self.source_transform = source_transform
 		self.target_transform = target_transform
 		self.opts = opts

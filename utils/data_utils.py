@@ -23,3 +23,19 @@ def make_dataset(dir):
                 path = os.path.join(root, fname)
                 images.append(path)
     return images
+
+import glob
+from tqdm import tqdm
+def make_grid_dataset(dir):
+    images = []
+    sN = glob.glob(dir + '/*')
+    for sN_i in tqdm(sN):
+        for sN_contents in glob.glob(sN_i + '/*'):
+            if len(os.listdir(sN_contents)) < 75:
+                    continue
+            else:
+                for fname in glob.glob(sN_contents + '/*.png'):
+                    images.append(fname)
+                
+    return images
+

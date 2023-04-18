@@ -66,14 +66,14 @@ def vis_faces(log_hooks):
 
 def vis_faces_with_id(hooks_dict, fig, gs, i):
 	plt.imshow(hooks_dict['input_face'])
-	plt.title('Input\nOut Sim={:.2f}'.format(float(hooks_dict['diff_input'])))
+	plt.title('Input\nOut Sim={:.2f}\nPSNR={:.3f}, SSIM={:.3f}'.format(float(hooks_dict['diff_input']), float(hooks_dict['psnr']), float(hooks_dict['ssim']) ))
 	fig.add_subplot(gs[i, 1])
 	plt.imshow(hooks_dict['target_face'])
-	plt.title('Target\nIn={:.2f}, Out={:.2f}'.format(float(hooks_dict['diff_views']),
-	                                                 float(hooks_dict['diff_target'])))
+	plt.title('Target\nIn={:.2f}, Out={:.2f}\nPSNR={:.3f}, SSIM={:.3f}'.format(float(hooks_dict['diff_views']),
+	                                                 float(hooks_dict['diff_target']), float(hooks_dict['psnr']), float(hooks_dict['ssim'])))
 	fig.add_subplot(gs[i, 2])
 	plt.imshow(hooks_dict['output_face'])
-	plt.title('Output\n Target Sim={:.2f}'.format(float(hooks_dict['diff_target'])))
+	plt.title('Output\n Target Sim={:.2f}\nPSNR={:.3f}, SSIM={:.3f}'.format(float(hooks_dict['diff_target']), float(hooks_dict['psnr']), float(hooks_dict['ssim'])))
 
 
 def vis_faces_no_id(hooks_dict, fig, gs, i):

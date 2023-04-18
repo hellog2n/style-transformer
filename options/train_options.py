@@ -28,6 +28,10 @@ class TrainOptions:
         self.parser.add_argument('--lpips_lambda', default=0.8, type=float, help='LPIPS loss multiplier factor')
         self.parser.add_argument('--id_lambda', default=0.1, type=float, help='ID loss multiplier factor')
         self.parser.add_argument('--l2_lambda', default=1.0, type=float, help='L2 loss multiplier factor')
+
+        self.parser.add_argument('--moco_lambda', default=0.0, type=float, help='L2 moco multiplier factor')
+        self.parser.add_argument('--label_nc', default=0, type=int, help='Label NC')
+
         self.parser.add_argument('--l2_ref_lambda', default=1.0, type=float, help='L2 loss multiplier factor')
         self.parser.add_argument('--l2_src_lambda', default=1.0, type=float, help='L2 loss multiplier factor')
 

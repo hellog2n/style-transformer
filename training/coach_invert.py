@@ -11,12 +11,14 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 
 from utils import common, train_utils
-from criteria import id_loss, w_norm, moco_loss
+from criteria import id_loss, moco_loss
 from configs import data_configs
 from datasets.images_dataset import ImagesDataset
 from criteria.lpips.lpips import LPIPS
 from models.style_transformer import StyleTransformer
 from training.ranger import Ranger
+
+from utils.metrics import evaluate
 
 
 class Coach:
@@ -39,7 +41,7 @@ class Coach:
 		if self.opts.lpips_lambda > 0:
 			self.lpips_loss = LPIPS(net_type='alex').to(self.device).eval()
 		if self.opts.id_lambda > 0:
-			if 'ffhq' in self.opts.dataset_type or 'celeb' in self.opts.dataset_type:
+			if 'ffhq' in self.opts.dataset_type or 'celeb' in self.opts.dataset_type or 'grid_encode' in self.opts.dataset_type:
 				self.id_loss = id_loss.IDLoss().to(self.device).eval()
 			else:
 				self.id_loss = moco_loss.MocoLoss().to(self.device).eval()
@@ -56,7 +58,7 @@ class Coach:
 										   drop_last=True)
 		self.test_dataloader = DataLoader(self.test_dataset,
 										  batch_size=self.opts.test_batch_size,
-										  shuffle=False,
+										  shuffle=True,
 										  num_workers=int(self.opts.test_workers),
 										  drop_last=True)
 
@@ -84,13 +86,24 @@ class Coach:
 				loss.backward()
 				self.optimizer.step()
 
+				
+
+
 				# Logging related
 				if self.global_step % self.opts.image_interval == 0 or (
 						self.global_step < 1000 and self.global_step % 25 == 0):
+
+					psnr, ssim = evaluate(y, y_hat)
+					id_logs = train_utils.add_dict(id_logs, 'psnr', psnr)
+					id_logs = train_utils.add_dict(id_logs, 'ssim', ssim)
+
 					self.parse_and_log_images(id_logs, x, y, y_hat, title='images/train/faces')
 				if self.global_step % self.opts.board_interval == 0:
+
 					self.print_metrics(loss_dict, prefix='train')
 					self.log_metrics(loss_dict, prefix='train')
+
+
 
 				# Validation related
 				val_loss_dict = None
@@ -115,6 +128,9 @@ class Coach:
 	def validate(self):
 		self.net.eval()
 		agg_loss_dict = []
+		avg_psnr = 0.
+		avg_ssim = 0.
+
 		for batch_idx, batch in enumerate(self.test_dataloader):
 			x, y = batch
 
@@ -124,6 +140,10 @@ class Coach:
 				loss, cur_loss_dict, id_logs = self.calc_loss(x, y, y_hat, latent)
 			agg_loss_dict.append(cur_loss_dict)
 
+			psnr, ssim = evaluate(y, y_hat)
+			id_logs = train_utils.add_dict(id_logs, 'psnr', psnr)
+			id_logs = train_utils.add_dict(id_logs, 'ssim', ssim)
+			
 			# Logging related
 			self.parse_and_log_images(id_logs, x, y, y_hat,
 									  title='images/test/faces',
@@ -133,10 +153,17 @@ class Coach:
 			if self.global_step == 0 and batch_idx >= 4:
 				self.net.train()
 				return None  # Do not log, inaccurate in first batch
+			psnr, ssim = evaluate(y, y_hat)
+			avg_psnr += psnr
+			avg_ssim += ssim
+		avg_psnr, avg_ssim = avg_psnr / batch_idx, avg_ssim / batch_idx
 
 		loss_dict = train_utils.aggregate_loss_dict(agg_loss_dict)
+		loss_dict = train_utils.add_dict(loss_dict, 'psnr', avg_psnr)
+		loss_dict = train_utils.add_dict(loss_dict, 'ssim', avg_ssim)
 		self.log_metrics(loss_dict, prefix='test')
 		self.print_metrics(loss_dict, prefix='test')
+		
 
 		self.net.train()
 		return loss_dict
@@ -183,7 +210,7 @@ class Coach:
 		print("Number of test samples: {}".format(len(test_dataset)))
 		return train_dataset, test_dataset
 
-	def calc_loss(self, x, y, y_hat):
+	def calc_loss(self, x, y, y_hat, latent):
 		loss_dict = {}
 		loss = 0.0
 		id_logs = None
@@ -249,3 +276,5 @@ class Coach:
 		if self.opts.start_from_latent_avg:
 			save_dict['latent_avg'] = self.net.latent_avg
 		return save_dict
+
+

@@ -11,3 +11,8 @@ def aggregate_loss_dict(agg_loss_dict):
 			print('{} has no value'.format(key))
 			mean_vals[key] = 0
 	return mean_vals
+
+
+def add_dict(dictionary, key, value):
+	dictionary[key] = value
+	return dictionary

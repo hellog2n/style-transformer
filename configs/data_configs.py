@@ -19,4 +19,13 @@ DATASETS = {
 		'test_source_root': dataset_paths['cars_test'],
 		'test_target_root': dataset_paths['cars_test'],
 	},
+    'grid_encode': {
+    'transforms': transforms_config.EncodeTransforms,
+		'train_source_root': dataset_paths['grid_train'],
+		'train_target_root': dataset_paths['grid_train'],
+		'test_source_root': dataset_paths['grid_test'],
+		'test_target_root': dataset_paths['grid_test'],
+		'train_edit_img_root': dataset_paths['grid_train'],
+		'train_edit_w_root': dataset_paths['grid_train'],
+	}
 }
