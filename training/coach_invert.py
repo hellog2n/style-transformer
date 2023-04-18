@@ -18,7 +18,7 @@ from criteria.lpips.lpips import LPIPS
 from models.style_transformer import StyleTransformer
 from training.ranger import Ranger
 
-from utils.metrics import evaluate
+from utils.metrics import evaluate_batch
 
 
 class Coach:
@@ -93,7 +93,7 @@ class Coach:
 				if self.global_step % self.opts.image_interval == 0 or (
 						self.global_step < 1000 and self.global_step % 25 == 0):
 
-					psnr, ssim = evaluate(y, y_hat)
+					psnr, ssim = evaluate_batch(y, y_hat)
 					id_logs = train_utils.add_dict(id_logs, 'psnr', psnr)
 					id_logs = train_utils.add_dict(id_logs, 'ssim', ssim)
 
@@ -140,7 +140,7 @@ class Coach:
 				loss, cur_loss_dict, id_logs = self.calc_loss(x, y, y_hat, latent)
 			agg_loss_dict.append(cur_loss_dict)
 
-			psnr, ssim = evaluate(y, y_hat)
+			psnr, ssim = evaluate_batch(y, y_hat)
 			id_logs = train_utils.add_dict(id_logs, 'psnr', psnr)
 			id_logs = train_utils.add_dict(id_logs, 'ssim', ssim)
 			
@@ -153,10 +153,10 @@ class Coach:
 			if self.global_step == 0 and batch_idx >= 4:
 				self.net.train()
 				return None  # Do not log, inaccurate in first batch
-			psnr, ssim = evaluate(y, y_hat)
-			avg_psnr += psnr
-			avg_ssim += ssim
-		avg_psnr, avg_ssim = avg_psnr / batch_idx, avg_ssim / batch_idx
+			psnr, ssim = evaluate_batch(y, y_hat)
+			avg_psnr += sum(psnr)
+			avg_ssim += sum(ssim)
+		avg_psnr, avg_ssim = avg_psnr / self.len_test_dataset, avg_ssim / self.len_test_dataset
 
 		loss_dict = train_utils.aggregate_loss_dict(agg_loss_dict)
 		loss_dict = train_utils.add_dict(loss_dict, 'psnr', avg_psnr)
@@ -208,6 +208,7 @@ class Coach:
 									 opts=self.opts)
 		print("Number of training samples: {}".format(len(train_dataset)))
 		print("Number of test samples: {}".format(len(test_dataset)))
+		self.len_test_dataset = len(test_dataset)
 		return train_dataset, test_dataset
 
 	def calc_loss(self, x, y, y_hat, latent):

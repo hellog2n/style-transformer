@@ -14,5 +14,6 @@ def aggregate_loss_dict(agg_loss_dict):
 
 
 def add_dict(dictionary, key, value):
-	dictionary[key] = value
+	for i, v in enumerate(value):
+		dictionary[i][key] = v
 	return dictionary
