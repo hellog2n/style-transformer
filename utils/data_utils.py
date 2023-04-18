@@ -36,7 +36,7 @@ def make_grid_dataset(dir):
             else:
                 for fname in glob.glob(sN_contents + '/*.png'):
                     images.append(fname)
-                break
+                
                 
     return images
 

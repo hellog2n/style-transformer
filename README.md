@@ -5,7 +5,23 @@
 
  Updated by @yoojin
 
+## Pretrained weights for face image
+* IR-SE50 Model for ID Loss [[LINK](https://drive.google.com/file/d/1KW7bjndL3QG3sxBbZxreGHigcCCpsDgn/view?usp=sharing)]
+* FFHQ Pretrained StyleGAN2 Generator [[LINK](https://drive.google.com/file/d/1EM87UquaoQmk17Q8d5kYIAHqu0dkYqdT/view?usp=sharing)]
+
 ## Docker Image
+**Pulling Docker Image**
+```
+docker pull hellog2n/style_transformer_image:latest
+```
+
+**Generating Docker Container**
+```
+nvidia-docker run -it --name style_transformer -v ~/style-transformer:/workspace/style-transformer \
+-v /nas2/lait/5000_Dataset/Video/GRID/preprocess/:/workspace/dataset/GRID \
+ --gpus=all -p [YOUR_PORT_NUM]:[YOUR_PORT_NUM] --shm-size=8g \
+pytorch/pytorch:1.12.1-cuda11.3-cudnn8-devel /bin/bash
+```
 
 
 
