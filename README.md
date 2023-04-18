@@ -3,6 +3,7 @@
 
  [![arXiv](https://img.shields.io/badge/paper-CVPR2022-green)](https://openaccess.thecvf.com/content/CVPR2022/html/Hu_Style_Transformer_for_Image_Inversion_and_Editing_CVPR_2022_paper.html) [![arXiv](https://img.shields.io/badge/arXiv-2203.07932-blue)](https://arxiv.org/abs/2203.07932) [![video](https://img.shields.io/badge/video-YouTube-red)](https://youtu.be/5VL2yYCgByQ)
 
+# Style Transformer for LAIT
  Updated by @yoojin
 
 ## Pretrained weights for face image
@@ -23,8 +24,44 @@ nvidia-docker run -it --name style_transformer -v ~/style-transformer:/workspace
 pytorch/pytorch:1.12.1-cuda11.3-cudnn8-devel /bin/bash
 ```
 
+## Getting Started
+### Training
+Update `configs/paths_config.py` with the necessary data paths and model paths for training and inference.
+```
+dataset_paths = {
+    'train_data': '/path/to/train/data'
+    'test_data': '/path/to/test/data',
+}
+
+model_paths = {
+    'stylegan_ffhq': 'pretrained_models/your_stylegan2_model'
+    'ir_se50': 'pretrained_models/your_ir_se50_model',
+}
+```
+
+If you want to use **GRID dataset**, use and update the `make_grid_dataset` in `utils/data_utils.py`. 
+
+### Training source code
+```
+python scripts/train.py \
+--dataset_type=grid_encode \
+--exp_dir=results/train_style_transformer \
+--batch_size=8 \
+--test_batch_size=8 \
+--val_interval=5000 \
+--save_interval=10000
+```
 
 
+
+ 
+  
+  <br>
+    <br>
+      <br>
+
+
+# Style Transformer in Original code
 ## Getting Started
 ### Prerequisites
 - Ubuntu 16.04
