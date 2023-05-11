@@ -15,7 +15,7 @@ class TestOptions:
 		self.parser.add_argument('--couple_outputs', action='store_true', help='Whether to also save inputs + outputs side-by-side')
 		self.parser.add_argument('--resize_outputs', action='store_true', help='Whether to resize outputs to 256x256 or keep at 1024x1024')
 
-		self.parser.add_argument('--test_batch_size', default=8, type=int, help='Batch size for testing and inference')
+		self.parser.add_argument('--test_batch_size', default=5, type=int, help='Batch size for testing and inference')
 		self.parser.add_argument('--test_workers', default=0, type=int, help='Number of test/inference dataloader workers')
 
 

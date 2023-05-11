@@ -299,6 +299,16 @@ class ConstantInput(nn.Module):
         out = self.input.repeat(batch, 1, 1, 1)
 
         return out
+    
+class LatentInput(nn.Module):
+    def __init__(self, channel, size=4) -> None:
+        super().__init__()
+        pass
+    
+    def forward(self, input):
+        batch = input.shape[0]
+        out = self.input.repeat(batch, 1, 1, 1)
+        return out
 
 
 class StyledConv(nn.Module):
@@ -400,6 +410,7 @@ class Generator(nn.Module):
         }
 
         self.input = ConstantInput(self.channels[4])
+
         self.conv1 = StyledConv(
             self.channels[4], self.channels[4], 3, style_dim, blur_kernel=blur_kernel
         )
@@ -478,7 +489,8 @@ class Generator(nn.Module):
             truncation_latent=None,
             input_is_latent=False,
             noise=None,
-            randomize_noise=True
+            randomize_noise=True,
+            identity_style=None
     ):
         if not input_is_latent:
             styles = [self.style(s) for s in styles]
@@ -518,7 +530,11 @@ class Generator(nn.Module):
 
             latent = torch.cat([latent, latent2], 1)
 
-        out = self.input(latent)
+        if identity_style is not None:
+            out = identity_style
+        else:
+            out = self.input(latent)
+        
         out = self.conv1(out, latent[:, 0], noise=noise[0])
 
         skip = self.to_rgb1(out, latent[:, 1])

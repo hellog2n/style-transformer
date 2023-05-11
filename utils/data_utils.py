@@ -26,7 +26,7 @@ def make_dataset(dir):
 
 import glob
 from tqdm import tqdm
-def make_grid_dataset(dir):
+def make_grid_dataset(dir, test=False):
     images = []
     sN = glob.glob(dir + '/*')
     for sN_i in tqdm(sN):
@@ -36,7 +36,8 @@ def make_grid_dataset(dir):
             else:
                 for fname in glob.glob(sN_contents + '/*.png'):
                     images.append(fname)
-                
+                if test:
+                    break
                 
     return images
 

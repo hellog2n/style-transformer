@@ -73,7 +73,8 @@ class StyleTransformer(nn.Module):
 		images, result_latent = self.decoder([codes],
 		                                     input_is_latent=True,
 		                                     randomize_noise=randomize_noise,
-		                                     return_latents=return_latents)
+		                                     return_latents=return_latents,
+											 identity_style=None)
 
 		if resize:
 			images = self.face_pool(images)

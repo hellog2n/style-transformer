@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-
+from matplotlib import animation
+import torch
 
 # Log images
 def log_input_image(x, opts):
@@ -12,6 +13,9 @@ def log_input_image(x, opts):
 		return tensor2sketch(x)
 	else:
 		return tensor2map(x)
+
+def tensor2concat(x, g):
+	return torch.cat((x, g), dim=-1)
 
 
 def tensor2im(var):
@@ -85,3 +89,23 @@ def vis_faces_no_id(hooks_dict, fig, gs, i):
 	fig.add_subplot(gs[i, 2])
 	plt.imshow(hooks_dict['output_face'])
 	plt.title('Output')
+
+import os
+
+def save_sample_videos(x, g, result_path, video_num, global_step, **hooks_dict):
+	collage = tensor2concat(x, g)
+	collage_images = []
+	for i, xi in enumerate(collage):
+		collage_images.append(tensor2im(xi))
+	
+	fig = plt.figure(figsize=(10,5))
+	vid = []
+	for c in collage_images:
+		#tmp_ims = c.squeeze()
+		vid.append([plt.imshow(c, animated=True)])
+	ani = animation.ArtistAnimation(fig, vid, interval=50, blit=False)
+	plt.title('Output\n Target \nPSNR={:.3f}, SSIM={:.3f}'.format(float(hooks_dict['psnr']), float(hooks_dict['ssim'])))
+	plt.axis('off')        
+	ani.save(os.path.join(result_path, 'final_video_{}_{}.gif'.format(global_step, video_num)), writer='pillow')
+
+	print('video saved')

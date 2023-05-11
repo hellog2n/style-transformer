@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from utils import common, train_utils
 from criteria import id_loss, moco_loss
 from configs import data_configs
-from datasets.images_dataset import ImagesDataset
+from datasets.images_dataset import ImagesDataset, TestDataset
 from criteria.lpips.lpips import LPIPS
 from models.style_transformer import StyleTransformer
 from training.ranger import Ranger
@@ -26,6 +26,12 @@ class Coach:
 		self.opts = opts
 
 		self.global_step = 0
+		
+		self.y_hat_list = []
+		self.y_list = []
+		self.video_per_frame = 75
+
+		self.batch_idx =  int(self.video_per_frame / self.opts.test_batch_size)
 
 		self.device = 'cuda'  # TODO: Allow multiple GPU? currently using CUDA_VISIBLE_DEVICES
 		self.opts.device = self.device
@@ -58,9 +64,9 @@ class Coach:
 										   drop_last=True)
 		self.test_dataloader = DataLoader(self.test_dataset,
 										  batch_size=self.opts.test_batch_size,
-										  shuffle=True,
+										  shuffle=False,
 										  num_workers=int(self.opts.test_workers),
-										  drop_last=True)
+										  drop_last=False)
 
 		# Initialize logger
 		log_dir = os.path.join(opts.exp_dir, 'logs')
@@ -91,7 +97,7 @@ class Coach:
 
 				# Logging related
 				if self.global_step % self.opts.image_interval == 0 or (
-						self.global_step < 1000 and self.global_step % 25 == 0):
+						self.global_step < 10000 and self.global_step % 100 == 0):
 
 					psnr, ssim = evaluate_batch(y, y_hat)
 					id_logs = train_utils.add_dict(id_logs, 'psnr', psnr)
@@ -131,8 +137,19 @@ class Coach:
 		avg_psnr = 0.
 		avg_ssim = 0.
 
+		total_avg_psnr = 0.
+		total_avg_ssim = 0.
+
+		self.y_hat_list = []
+		self.y_list = []
+		video_num = 0
+
 		for batch_idx, batch in enumerate(self.test_dataloader):
+
+			
 			x, y = batch
+
+
 
 			with torch.no_grad():
 				x, y = x.to(self.device).float(), y.to(self.device).float()
@@ -143,30 +160,69 @@ class Coach:
 			psnr, ssim = evaluate_batch(y, y_hat)
 			id_logs = train_utils.add_dict(id_logs, 'psnr', psnr)
 			id_logs = train_utils.add_dict(id_logs, 'ssim', ssim)
+
+			# Saving Result Video
+			self.concat_batches(y, y_hat, batch_idx)
 			
 			# Logging related
-			self.parse_and_log_images(id_logs, x, y, y_hat,
-									  title='images/test/faces',
-									  subscript='{:04d}'.format(batch_idx))
+			if batch_idx < 2:
+				self.parse_and_log_images(id_logs, x, y, y_hat,
+										title='images/test/faces',
+										subscript='{:04d}'.format(batch_idx))
 
 			# For first step just do sanity test on small amount of data
-			if self.global_step == 0 and batch_idx >= 4:
-				self.net.train()
-				return None  # Do not log, inaccurate in first batch
-			psnr, ssim = evaluate_batch(y, y_hat)
+			#if self.global_step == 0 and batch_idx >= 4:
+			#	self.net.train()
+			#	return None  # Do not log, inaccurate in first batch
+
 			avg_psnr += sum(psnr)
 			avg_ssim += sum(ssim)
-		avg_psnr, avg_ssim = avg_psnr / self.len_test_dataset, avg_ssim / self.len_test_dataset
+
+			if (batch_idx + 1) % self.batch_idx == 0:
+				# 비디오 한 개당 psnr, ssim evaluation 하기
+				
+				avg_psnr, avg_ssim = avg_psnr / self.video_per_frame, avg_ssim / self.video_per_frame
+				total_avg_psnr += avg_psnr
+				total_avg_ssim += avg_ssim
+
+				self.log_videos('images/test/faces', self.y_list, self.y_hat_list, video_num, self.global_step, psnr=avg_psnr, ssim=avg_ssim)
+
+				video_num += 1
+				avg_psnr = 0
+				avg_ssim = 0
+
+				
+				
+		total_avg_psnr / (video_num + 1)
+		total_avg_ssim / (video_num + 1)		
+		video_num = 0
+		
 
 		loss_dict = train_utils.aggregate_loss_dict(agg_loss_dict)
-		loss_dict = train_utils.add_dict(loss_dict, 'psnr', avg_psnr)
-		loss_dict = train_utils.add_dict(loss_dict, 'ssim', avg_ssim)
+		loss_dict = train_utils.add_dict_from_args(loss_dict, 'psnr', total_avg_psnr)
+		loss_dict = train_utils.add_dict_from_args(loss_dict, 'ssim', total_avg_ssim)
 		self.log_metrics(loss_dict, prefix='test')
 		self.print_metrics(loss_dict, prefix='test')
 		
-
 		self.net.train()
 		return loss_dict
+
+
+	def concat_batches(self, batch_y, batch_yhat, batch_idx):
+		if (batch_idx) % self.batch_idx == 0:
+			self.y_hat_list = batch_yhat
+			self.y_list = batch_y
+		else:
+			self.y_hat_list = torch.vstack((self.y_hat_list, batch_yhat))
+			self.y_list = torch.vstack((self.y_list, batch_y))
+
+
+	def log_videos(self, name, y, y_hat_list, video_num, global_step, **hooks_dict):
+		result_path = os.path.join(self.logger.log_dir, name)
+		common.save_sample_videos(y, y_hat_list, result_path, video_num, global_step, **hooks_dict)
+
+
+
 
 	def checkpoint_me(self, loss_dict, is_best):
 		save_name = 'best_model.pt' if is_best else 'iteration_{}.pt'.format(self.global_step)
@@ -201,14 +257,14 @@ class Coach:
 									  source_transform=transforms_dict['transform_source'],
 									  target_transform=transforms_dict['transform_gt_train'],
 									  opts=self.opts)
-		test_dataset = ImagesDataset(source_root=dataset_args['test_source_root'],
+		test_dataset = TestDataset(source_root=dataset_args['test_source_root'],
 									 target_root=dataset_args['test_target_root'],
 									 source_transform=transforms_dict['transform_source'],
 									 target_transform=transforms_dict['transform_test'],
 									 opts=self.opts)
 		print("Number of training samples: {}".format(len(train_dataset)))
 		print("Number of test samples: {}".format(len(test_dataset)))
-		self.len_test_dataset = len(test_dataset)
+		
 		return train_dataset, test_dataset
 
 	def calc_loss(self, x, y, y_hat, latent):

@@ -5,13 +5,13 @@ dataset_paths = {
 	'ffhq': 'data/ffhq256',
   	'cars_train': 'data/cars/cars_train',
   	'cars_test': 'data/cars/cars_val',
-	'grid_train': '/workspace/dataset/GRID',
-	'grid_test': '/workspace/dataset/GRID'
+	'grid_train': '/workspace/dataset/GRID/fomm',
+	'grid_test': '/workspace/dataset/GRID/fomm'
 }
 
 model_paths = {
-	'stylegan_ffhq': '/workspace/style-transformer/pretrained_models/stylegan2-ffhq-config-f.pt',
-	'ir_se50': '/workspace/style-transformer/pretrained_models/model_ir_se50.pth',
+	'stylegan_ffhq': '/workspace/style_transformer/pretrained_models/stylegan2-ffhq-config-f.pt',
+	'ir_se50': '/workspace/style_transformer/pretrained_models/model_ir_se50.pth',
 	'circular_face': '',
 	'moco': '',
     'latent_classifier': ''

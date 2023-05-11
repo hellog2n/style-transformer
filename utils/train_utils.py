@@ -17,3 +17,7 @@ def add_dict(dictionary, key, value):
 	for i, v in enumerate(value):
 		dictionary[i][key] = v
 	return dictionary
+
+def add_dict_from_args(dictionary, key, value):
+	dictionary[key] = value
+	return dictionary

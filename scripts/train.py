@@ -11,9 +11,9 @@ os.environ["NUMEXPR_NUM_THREADS"] = "4" # export NUMEXPR_NUM_THREADS=2
 os.environ["OMP_NUM_THREADS"] = "4" # export OMP_NUM_THREADS=2
 
 import torch
-torch.set_num_threads(2)
+torch.set_num_threads(4)
 
-os.environ["CUDA_VISIBLE_DEVICES"]= "4,5,6"
+os.environ["CUDA_VISIBLE_DEVICES"]= "0,5"
 
 import json
 import sys
